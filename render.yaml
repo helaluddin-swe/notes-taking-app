@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: notes-app-backend
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        scope: secret
+      - key: UPSTASH_REDIS_REST_URL
+        scope: secret
+      - key: UPSTASH_REDIS_REST_TOKEN
+        scope: secret
+      - key: FRONTEND_URL
+        value: https://your-frontend-url.onrender.com
+        # Update this with your actual Render frontend URL after deployment

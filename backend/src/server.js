@@ -10,15 +10,25 @@ const __dirnameLocal = path.resolve();
 
 dotenv.config();
 
-// CORS (Development Only)
-if (process.env.NODE_ENV !== "production") {
-  app.use(
-    cors({
-      origin: "http://localhost:5173",
-      credentials: true,
-    })
-  )}
+// CORS Configuration
+const allowedOrigins = [
+  "http://localhost:5173", // development
+  "http://localhost:5001", // development
+  process.env.FRONTEND_URL || "", // production (set in render.yaml)
+].filter(Boolean);
 
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 // Global Middlewares
 app.use(express.json());
@@ -28,13 +38,12 @@ app.use(rateLimiter);
 app.use("/api/notes", noteRoutes);
 
 // Serve React Frontend in Production
-
-
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirnameLocal, "../frontend/dist")));
+  const frontendPath = path.join(__dirname, "../../frontend/dist");
+  app.use(express.static(frontendPath));
 
   app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirnameLocal, "../frontend","/dist","index.html"));
+    res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
 
