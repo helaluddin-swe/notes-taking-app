@@ -3,8 +3,8 @@ services:
     name: notes-app-backend
     runtime: node
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    buildCommand: npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -15,5 +15,5 @@ services:
       - key: UPSTASH_REDIS_REST_TOKEN
         scope: secret
       - key: FRONTEND_URL
-        value: https://your-frontend-url.onrender.com
+        value: https://notes-taking-app-1-sk6o.onrender.com
         # Update this with your actual Render frontend URL after deployment
