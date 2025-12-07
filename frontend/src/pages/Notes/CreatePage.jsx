@@ -11,28 +11,27 @@ const CreatePage = () => {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!title.trim() || !content.trim()) {
-      alert(<div> Delelte ?</div>)
-      return
-    }
-    setLoading(!loading)
-    try {
+  e.preventDefault();
 
-      await api.post("/notes", { title, content })
-      toast.success("Notes Created Successfully")
-
-      navigate("/notes-page")
-
-
-
-    } catch (error) {
-      console.log({ message: "failed to create", error })
-      toast.error("Notes created Failed.Try Again!")
-
-
-    }
+  if (!title.trim() || !content.trim()) {
+    toast.error("Title and content are required!");
+    return;
   }
+
+  setLoading(true);
+
+  try {
+    await api.post("/notes", { title, content });
+    toast.success("Notes Created Successfully");
+    navigate("/notes-page");
+  } catch (error) {
+    console.log("Failed to create:", error?.response?.data || error.message);
+    toast.error("Notes creation failed. Try again!");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   return (

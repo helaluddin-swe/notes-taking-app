@@ -1,45 +1,52 @@
 const express = require("express");
-const app = express();
 const dotenv = require("dotenv");
+const cors = require("cors");
+const path = require("path");
+
 const noteRoutes = require("./routes/notesRoutes.js");
 const connectDB = require("./config/db.js");
 const rateLimiter = require("./middleware/rateLimiter.js");
-const cors = require("cors");
-const path = require("path");
-const __dirnameLocal = path.resolve();
 
 dotenv.config();
 
-// CORS Configuration
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// ✅ Allowed Origins (Dev + Prod)
 const allowedOrigins = [
-  "http://localhost:5173", // development
-  "http://localhost:5001", // development
-  process.env.FRONTEND_URL || "", // production (set in render.yaml)
+  "http://localhost:5173",
+  "http://localhost:5001",
+  process.env.FRONTEND_URL, // e.g. https://your-app.vercel.app
 ].filter(Boolean);
 
+// ✅ Middlewares
+app.use(express.json());
+app.use(rateLimiter);
+
+// ✅ Correct CORS Setup
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+    origin: (origin, callback) => {
+      // allow mobile apps, curl, Postman (no origin)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
+
+      return callback(new Error("CORS blocked"));
     },
     credentials: true,
   })
 );
 
-// Global Middlewares
-app.use(express.json());
-app.use(rateLimiter);
-
-// API Routes
+// ✅ API Routes
 app.use("/api/notes", noteRoutes);
 
-// Serve React Frontend in Production
+// ✅ Serve Frontend only in production
 if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.join(__dirname, "../../frontend/dist");
+  const frontendPath = path.resolve(__dirname, "../../frontend/dist");
+
   app.use(express.static(frontendPath));
 
   app.get("*", (req, res) => {
@@ -47,11 +54,17 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// Start Server
-const PORT = process.env.PORT || 5000;
+// ✅ Start server after DB connects
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`✅ Server running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to start server:", err.message);
+    process.exit(1);
+  }
+};
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-  });
-});
+startServer();
