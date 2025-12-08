@@ -1,70 +1,46 @@
 const express = require("express");
+const app = express();
 const dotenv = require("dotenv");
-const cors = require("cors");
-const path = require("path");
-
 const noteRoutes = require("./routes/notesRoutes.js");
 const connectDB = require("./config/db.js");
 const rateLimiter = require("./middleware/rateLimiter.js");
+const cors = require("cors");
 
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-// ✅ Allowed Origins (Dev + Prod)
+// CORS Configuration
 const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5001",
-  process.env.FRONTEND_URL, // e.g. https://your-app.vercel.app
+  "http://localhost:5173", // local frontend
+  process.env.FRONTEND_URL, // Vercel frontend
 ].filter(Boolean);
 
-// ✅ Middlewares
-app.use(express.json());
-app.use(rateLimiter);
-
-// ✅ Correct CORS Setup
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // allow mobile apps, curl, Postman (no origin)
+app.use(cors({
+    origin: function (origin, callback) {
+      // Allow Postman / server-to-server
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+        callback(null, true);
+      } else {
+        callback(new Error("CORS BLOCKED: Origin not allowed → " + origin));
       }
-
-      return callback(new Error("CORS blocked"));
     },
     credentials: true,
   })
 );
 
-// ✅ API Routes
+// Global Middlewares
+app.use(express.json());
+app.use(rateLimiter);
+
+// API Routes
 app.use("/api/notes", noteRoutes);
 
-// ✅ Serve Frontend only in production
-if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.resolve(__dirname, "../../frontend/dist");
 
-  app.use(express.static(frontendPath));
+const PORT = process.env.PORT || 5000;
 
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
   });
-}
-
-// ✅ Start server after DB connects
-const startServer = async () => {
-  try {
-    await connectDB();
-    app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error("❌ Failed to start server:", err.message);
-    process.exit(1);
-  }
-};
-
-startServer();
+});
