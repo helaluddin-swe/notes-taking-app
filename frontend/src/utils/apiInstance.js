@@ -1,33 +1,32 @@
 import axios from "axios";
 
-// Safe, deploy-friendly API URL selection:
-// 1) Use build-time env var `VITE_API_URL` if provided by the host (recommended).
-// 2) Fall back to an explicit production URL used by this project.
-// 3) Finally fall back to localhost for local development.
-const FALLBACK_PRIMARY = "https://destination-coder.onrender.com/api";
-const FALLBACK_BACKUP = "https://destination-coder-1.onrender.com/api";
+// Your primary backend API
+const PRIMARY_URL = "https://destination-coder.onrender.com/api";
 
-const PRIMARY_URL =
-  import.meta.env.VITE_API_URL ||
-  FALLBACK_PRIMARY ||
-  "http://localhost:5000/api";
-const BACKUP_URL =
-  import.meta.env.VITE_BACKUP_API_URL || FALLBACK_BACKUP || PRIMARY_URL;
+// (Optional) backup URL if you want failover
+const BACKUP_URL = "https://destination-coder-1.onrender.com/api";
 
+// Start with the main URL
 let BASE_URL = PRIMARY_URL;
 
-const api = axios.create({ baseURL: BASE_URL });
+// Create axios instance
+const api = axios.create({
+  baseURL: BASE_URL,
+});
 
-// Auto failover: if a request fails with no response (network), swap URLs once and retry
+// Auto failover: switch to backup only if network error occurs
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config || {};
+    const originalRequest = error.config;
 
-    if (!originalRequest._retry && !error.response) {
+    if (!error.response && !originalRequest._retry) {
       originalRequest._retry = true;
+
+      // Switch URLs
       BASE_URL = BASE_URL === PRIMARY_URL ? BACKUP_URL : PRIMARY_URL;
       api.defaults.baseURL = BASE_URL;
+
       return api(originalRequest);
     }
 
