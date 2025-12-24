@@ -1,55 +1,43 @@
 const express = require("express");
-const app = express();
+const cors = require("cors");
 const dotenv = require("dotenv");
 const noteRoutes = require("./routes/notesRoutes.js");
 const connectDB = require("./config/db.js");
 const rateLimiter = require("./middleware/rateLimiter.js");
-const cors = require("cors");
 
 dotenv.config();
 
-// ====== CORS FIX (WORKS FOR VERCEL + RENDER + LOCAL) ======
+const app = express();
+
+// ====== CORS ======
 const allowedOrigins = [
-  "http://localhost:5173",          // Local Vite frontend
-  process.env.FRONTEND_URL,         // Vercel frontend (from .env)
+  "http://localhost:5174",                   // local dev
+  process.env.FRONTEND_URL                   // Vercel frontend
 ].filter(Boolean);
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow Postman, curl, backend requests
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.log("❌ BLOCKED ORIGIN:", origin);
-    return callback(new Error("CORS Error: Origin Not Allowed"));
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow Postman / server-to-server
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("CORS Error: Origin Not Allowed → " + origin));
   },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Extra headers to avoid browser preflight issues
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  next();
-});
-
-// ==========================================================
-
-// Global Middlewares
+// Express JSON middleware
 app.use(express.json());
+
+// Rate limiter middleware
 app.use(rateLimiter);
 
-// API Routes
+// ===== API Routes =====
 app.use("/api/notes", noteRoutes);
 
-// Server Port
+// ===== Start Server =====
 const PORT = process.env.PORT || 5000;
 
-// Start server
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
