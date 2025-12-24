@@ -24,7 +24,7 @@ const NotesPage = () => {
       try {
         setIsLoading(true);
 
-        const res = await api.get("/notes")
+        const res = await api.get("api/notes")
         setNotes(res.data);
 
         setIsRateLimit((prev) => !prev); // Optional: only if you really want to toggle
@@ -42,7 +42,7 @@ const NotesPage = () => {
     e.preventDefault()
     if (!window.confirm("Are you want to delete one?")) return
     try {
-      await api.delete(`/notes/${id}`)
+      await api.delete(`api/notes/${id}`)
       setNotes((prev) => prev.filter((note) => note._id !== id))
       toast.success("deleted notes succesfully")
 

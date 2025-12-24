@@ -12,7 +12,7 @@ const NoteDetailsPage = () => {
     const { id } = useParams()
     useEffect(() => {
         const fetchNote = async () => {
-            const res = await api.get(`/notes/${id}`)
+            const res = await api.get(`api/notes/${id}`)
             setNotes(res.data)
             setLoading(true)
 
@@ -25,7 +25,7 @@ const NoteDetailsPage = () => {
         e.preventDefault()
         if (!window.confirm("Are you want to delete one?")) return
         try {
-            await api.delete(`/notes/${id}`)
+            await api.delete(`api/notes/${id}`)
             toast.success("deleted notes succesfully")
             navigate("/")
 
@@ -43,7 +43,7 @@ const NoteDetailsPage = () => {
         }
         setSaving(true)
         try {
-            await api.put(`/notes/${id}`, notes)
+            await api.put(`api/notes/${id}`, notes)
 
             toast.success("Updated notes successfully")
             navigate("/notes-page")
